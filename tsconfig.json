@@ -23,7 +23,6 @@
     "next-env.d.ts",
     "./types.d.ts",
     "lib/**/*.ts",
-    "test/**/*.ts",
     "lib/**/*.tsx",
   ],
   "exclude": [
