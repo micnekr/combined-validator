@@ -1,3 +1,4 @@
+"use strict";
 /*
 combined-validator - A parser for a unified format for validation of both front-end and back-end
 
@@ -21,11 +22,16 @@ var __spreadArray = (this && this.__spreadArray) || function (to, from) {
         to[j] = from[i];
     return to;
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 var _a;
-import { Schema } from "mongoose";
-import injectValidationCreators from "./validateUtils";
-import { deepAssign, flatten } from "./utils";
-export var stringValidate = (_a = injectValidationCreators(createValidation, createValidateMiddleware), _a.stringValidate), numberValidate = _a.numberValidate;
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.createValidateMiddleware = exports.createValidation = exports.constructSchema = exports.finalValidationCallbacks = exports.validateCallbacks = exports.valuesToApply = exports.numberValidate = exports.stringValidate = void 0;
+var mongoose_1 = require("mongoose");
+var validateUtils_1 = __importDefault(require("./validateUtils"));
+var utils_1 = require("./utils");
+exports.stringValidate = (_a = validateUtils_1.default(createValidation, createValidateMiddleware), _a.stringValidate), exports.numberValidate = _a.numberValidate;
 var fieldTypesByTypeName = {
     string: String,
     number: Number,
@@ -33,18 +39,18 @@ var fieldTypesByTypeName = {
     date: Date,
     object: Object,
 };
-export var valuesToApply = ["default", "enum", "unique"];
-export var validateCallbacks = {
-    maxLength: stringValidate.maxLength,
-    exactLength: stringValidate.exactLength
+exports.valuesToApply = ["default", "enum", "unique"];
+exports.validateCallbacks = {
+    maxLength: exports.stringValidate.maxLength,
+    exactLength: exports.stringValidate.exactLength
 };
-export var finalValidationCallbacks = {
-    greaterOrEqualTo: numberValidate.greaterOrEqualTo
+exports.finalValidationCallbacks = {
+    greaterOrEqualTo: exports.numberValidate.greaterOrEqualTo
 };
-export function constructSchema(fieldsPublic, fieldsPrivate) {
+function constructSchema(fieldsPublic, fieldsPrivate) {
     if (fieldsPrivate === void 0) { fieldsPrivate = {}; }
     // since Object.assign gives us a shallow copy, we can't use it
-    var mergedFields = flatten(deepAssign(fieldsPublic, fieldsPrivate));
+    var mergedFields = utils_1.flatten(utils_1.deepAssign(fieldsPublic, fieldsPrivate));
     function recursivelyApplySettings(fields) {
         var schemaSettings = {};
         var finalValidationCallbacksForThisSchema = [];
@@ -63,17 +69,17 @@ export function constructSchema(fieldsPublic, fieldsPrivate) {
                 if (paramOptionName === "type" || paramOptionName === "required")
                     continue;
                 var paramOption = paramOptions[paramOptionName];
-                if (paramOptionName in validateCallbacks) {
-                    currentEntry["validate"] = validateCallbacks[paramOptionName](paramOption);
+                if (paramOptionName in exports.validateCallbacks) {
+                    currentEntry["validate"] = exports.validateCallbacks[paramOptionName](paramOption);
                     continue;
                 }
-                if (valuesToApply.includes(paramOptionName)) {
+                if (exports.valuesToApply.includes(paramOptionName)) {
                     currentEntry[paramOptionName] = paramOption;
                     continue;
                 }
-                if (paramOptionName in finalValidationCallbacks) {
+                if (paramOptionName in exports.finalValidationCallbacks) {
                     console.log("final validation");
-                    var outVals = [finalValidationCallbacks[paramOptionName], paramName];
+                    var outVals = [exports.finalValidationCallbacks[paramOptionName], paramName];
                     if (Array.isArray(paramOption))
                         outVals.push.apply(outVals, paramOption);
                     else
@@ -84,7 +90,7 @@ export function constructSchema(fieldsPublic, fieldsPrivate) {
             }
             schemaSettings[paramName] = currentEntry;
         }
-        var out = new Schema(schemaSettings);
+        var out = new mongoose_1.Schema(schemaSettings);
         finalValidationCallbacksForThisSchema.forEach(function (settings) {
             var validator = settings.shift();
             // make sure all the parameters are required (otherwise the functions do not make much sense)
@@ -94,8 +100,9 @@ export function constructSchema(fieldsPublic, fieldsPrivate) {
     }
     return recursivelyApplySettings(mergedFields);
 }
+exports.constructSchema = constructSchema;
 // "current" means that those values are no longer general
-export function createValidation(message, validate) {
+function createValidation(message, validate) {
     return function () {
         var currentReferenceVals = [];
         for (var _i = 0; _i < arguments.length; _i++) {
@@ -107,7 +114,8 @@ export function createValidation(message, validate) {
         };
     };
 }
-export function createValidateMiddleware(message, automaticResponseToUndefined, callback) {
+exports.createValidation = createValidation;
+function createValidateMiddleware(message, automaticResponseToUndefined, callback) {
     return function (fields) {
         var out = function (next) {
             var _this = this;
@@ -122,4 +130,5 @@ export function createValidateMiddleware(message, automaticResponseToUndefined, 
         return out;
     };
 }
+exports.createValidateMiddleware = createValidateMiddleware;
 //# sourceMappingURL=mongo.js.map

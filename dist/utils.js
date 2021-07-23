@@ -1,3 +1,4 @@
+"use strict";
 /*
 combined-validator - A parser for a unified format for validation of both front-end and back-end
 
@@ -16,7 +17,9 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-export function deepAssign(target, src) {
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.flatten = exports.deepAssign = void 0;
+function deepAssign(target, src) {
     if (src === undefined)
         return target; // return target if there is nothing in src to override target with
     var isRecursible = function (val) { return typeof val === "object"; };
@@ -30,7 +33,8 @@ export function deepAssign(target, src) {
     });
     return out;
 }
-export function flatten(fields) {
+exports.deepAssign = deepAssign;
+function flatten(fields) {
     var out = {};
     for (var typeContainerKey in fields) {
         if (!fields.hasOwnProperty(typeContainerKey))
@@ -67,4 +71,5 @@ export function flatten(fields) {
     }
     return out;
 }
+exports.flatten = flatten;
 //# sourceMappingURL=utils.js.map

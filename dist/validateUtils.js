@@ -1,3 +1,4 @@
+"use strict";
 /*
 combined-validator - A parser for a unified format for validation of both front-end and back-end
 
@@ -16,22 +17,28 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-export function isDescendingOrder(resolvedFields) {
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.isMaxLength = exports.isExactLength = exports.isDescendingOrder = void 0;
+function isDescendingOrder(resolvedFields) {
     return resolvedFields.every(function (value, index) {
         return index == resolvedFields.length - 1 || value >= resolvedFields[index + 1];
     });
 }
-export var isExactLength = function (value, length) { return value.length == length; };
-export var isMaxLength = function (value, length) { return value.length <= length; };
-export default function injectValidationCreators(createValidation, createFinalValidation) {
+exports.isDescendingOrder = isDescendingOrder;
+var isExactLength = function (value, length) { return value.length == length; };
+exports.isExactLength = isExactLength;
+var isMaxLength = function (value, length) { return value.length <= length; };
+exports.isMaxLength = isMaxLength;
+function injectValidationCreators(createValidation, createFinalValidation) {
     return {
         stringValidate: {
-            exactLength: createValidation("This string field size does not match the required size", isExactLength),
-            maxLength: createValidation("This string field is too long", isMaxLength),
+            exactLength: createValidation("This string field size does not match the required size", exports.isExactLength),
+            maxLength: createValidation("This string field is too long", exports.isMaxLength),
         },
         numberValidate: {
             greaterOrEqualTo: createFinalValidation("The fields need to be in descending order or equal", false, isDescendingOrder)
         }
     };
 }
+exports.default = injectValidationCreators;
 //# sourceMappingURL=validateUtils.js.map
