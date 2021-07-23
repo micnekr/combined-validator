@@ -1,6 +1,6 @@
 {
   "name": "combined-validator",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "A parser for a unified format for validation of both front-end and back-end",
   "main": "index.js",
   "types": "./types.d.ts",
