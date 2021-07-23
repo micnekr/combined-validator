@@ -17,8 +17,6 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-import { PreMiddlewareFunction } from "mongoose"
-
 export function isDescendingOrder(resolvedFields: any[]) {
     return resolvedFields.every((value: any, index: number) => {
         return index == resolvedFields.length - 1 || value >= resolvedFields[index + 1]

@@ -19,7 +19,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
 import { PreMiddlewareFunction, Schema, SchemaDefinition } from "mongoose";
-import injectValidationCreators from "./mongoValidateUtils"
+import injectValidationCreators from "./validateUtils"
 import { deepAssign, flatten } from "./utils";
 
 export const { stringValidate, numberValidate } = injectValidationCreators(createValidation, createValidateMiddleware);
@@ -110,7 +110,7 @@ export function constructSchema(fieldsPublic: FieldConstraintsCollection, fields
 }
 
 // "current" means that those values are no longer general
-function createValidation<T>(message: string, validate: (toCheck: T, ...referenceVals: any[]) => boolean) { // options specific to the check in general
+export function createValidation<T>(message: string, validate: (toCheck: T, ...referenceVals: any[]) => boolean) { // options specific to the check in general
     return function (...currentReferenceVals: any[]) { // options specific to the current value
         return {
             message,
@@ -119,7 +119,7 @@ function createValidation<T>(message: string, validate: (toCheck: T, ...referenc
     }
 }
 
-function createValidateMiddleware(message: string, automaticResponseToUndefined: boolean | null, callback: (resolvedFields: any[], toValidate: any, fields: any[]) => boolean) {
+export function createValidateMiddleware(message: string, automaticResponseToUndefined: boolean | null, callback: (resolvedFields: any[], toValidate: any, fields: any[]) => boolean) {
     return function (fields: any[]) {
         const out: PreMiddlewareFunction<any> = function (next) {
             const resolvedFields = fields.map((k) => this[k]);

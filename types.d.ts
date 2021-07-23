@@ -23,7 +23,7 @@ interface Field<T> {
     enum?: T extends StringConstructor ? Array<string> : undefined,
     maxLength?: T extends StringConstructor ? number : undefined
     exactLength?: T extends StringConstructor ? number : undefined
-    greaterOrEqualTo?: T extends NumberConstructor ? string : undefined
+    greaterOrEqualTo?: T extends NumberConstructor ? string | string[] : undefined
     lazyFill?: boolean,
     unique?: boolean,
     default?:
