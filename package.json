@@ -1,6 +1,6 @@
 {
   "name": "combined-validator",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "description": "A parser for a unified format for validation of both front-end and back-end",
   "main": "./dist/index.js",
   "types": "./types.d.ts",
@@ -19,7 +19,7 @@
     "react"
   ],
   "author": "micnekr",
-  "license": "GPL-3.0-or-later",
+  "license": "MIT",
   "bugs": {
     "url": "https://github.com/micnekr/combined-validator/issues"
   },
