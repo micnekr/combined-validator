@@ -1,9 +1,9 @@
 {
   "name": "combined-validator",
-  "version": "0.0.11",
+  "version": "0.0.12",
   "description": "A parser for a unified format for validation of both front-end and back-end",
-  "main": "./index.js",
-  "types": "./index.d.ts",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "scripts": {
     "test": "nyc env TS_NODE_COMPILER_OPTIONS='{\"module\": \"commonjs\" }' ./node_modules/mocha/bin/mocha"
   },

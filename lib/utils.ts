@@ -1,4 +1,4 @@
-import { FieldConstraintsCollection, Flattened, FieldTypeContainer, FieldGroup } from "..";
+import { FieldConstraintsCollection, Flattened, FieldTypeContainer, FieldGroup } from "./";
 
 export function deepAssign<T>(target: T, src: T) {
     if (src === undefined) return target; // return target if there is nothing in src to override target with

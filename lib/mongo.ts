@@ -1,7 +1,7 @@
 import { PreMiddlewareFunction, Schema, SchemaDefinition } from "mongoose";
 import injectValidationCreators from "./validateUtils"
 import { deepAssign, flatten } from "./utils";
-import { FieldConstraintsCollection, Flattened, FlattenedValue } from "..";
+import { FieldConstraintsCollection, Flattened, FlattenedValue } from "./";
 
 export const { stringValidate, numberValidate } = injectValidationCreators(createValidation, createValidateMiddleware);
 

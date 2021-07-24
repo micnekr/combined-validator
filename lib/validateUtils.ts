@@ -1,4 +1,4 @@
-import { FinalValidationCreator, ValidationCreator } from "../index"
+import { FinalValidationCreator, ValidationCreator } from "./"
 
 export function isDescendingOrder(resolvedFields: any[]) {
     return resolvedFields.every((value: any, index: number) => {
