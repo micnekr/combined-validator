@@ -8,7 +8,8 @@ npm run test
 
 tsc
 
-cp ./lib/types.d.ts ./dist
+# cp ./dist/index.js ./
+# cp ./lib/index.ts ./
 
 read -p "git message: " "GIT_MESSAGE"
 

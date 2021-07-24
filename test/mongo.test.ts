@@ -1,6 +1,7 @@
 import { expect } from "chai";
 import { SchemaDefinition } from "mongoose";
 import { SinonStub, restore, spy, stub } from "sinon";
+import { FieldConstraintsCollection } from "..";
 import { constructSchema, validateCallbacks, finalValidationCallbacks, createValidateMiddleware, createValidation } from "../lib/mongo"
 
 const mongoose = require("mongoose"); // for stubbing
