@@ -17,11 +17,12 @@
     "isolatedModules": true,
     "jsx": "preserve",
     "outDir": "./dist",
-    "sourceMap": true
+    "sourceMap": true,
+    "declaration": true,
   },
   "include": [
     "next-env.d.ts",
-    "./types.d.ts",
+    "lib/types.d.ts",
     "lib/**/*.ts",
     "lib/**/*.tsx",
   ],

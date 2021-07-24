@@ -1,12 +1,15 @@
 {
   "name": "combined-validator",
-  "version": "0.0.6",
+  "version": "0.0.7",
   "description": "A parser for a unified format for validation of both front-end and back-end",
   "main": "./dist/index.js",
-  "types": "./types.d.ts",
+  "types": "./lib/types.d.ts",
   "scripts": {
     "test": "nyc env TS_NODE_COMPILER_OPTIONS='{\"module\": \"commonjs\" }' ./node_modules/mocha/bin/mocha"
   },
+  "files": [
+    "dist"
+  ],
   "repository": {
     "type": "git",
     "url": "git@github.com:micnekr/combined-validator.git"

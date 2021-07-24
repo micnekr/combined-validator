@@ -1,5 +1,7 @@
 publish.sh
 
+dist/
+
 # Logs
 logs
 *.log
