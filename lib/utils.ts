@@ -1,8 +1,9 @@
 import { FieldConstraintsCollection, Flattened, FieldTypeContainer, FieldGroup } from "./";
 
+//NOTE: this function is NOT SAFE and therefore should never be used with user input
 export function deepAssign<T>(target: T, src: T) {
     if (src === undefined) return target; // return target if there is nothing in src to override target with
-    const isRecursible = (val: any): val is object => typeof val === "object";
+    const isRecursible = (val: any): val is object => typeof val === "object" && val !== null;
     if (!isRecursible(target) || !isRecursible(src)) return src; // if we can not recurse anymore, then choose src
 
     const keys = new Set(Object.keys(target))
@@ -15,6 +16,7 @@ export function deepAssign<T>(target: T, src: T) {
     return out as T;
 }
 
+//NOTE: this function is NOT SAFE and therefore should never be used with user input
 export function flatten(fields: FieldConstraintsCollection) {
 
     const out: Flattened = {};
@@ -50,5 +52,23 @@ export function flatten(fields: FieldConstraintsCollection) {
             }
         }
     }
+    return out;
+}
+
+// NOTE: also deletes undefined
+export function deleteEmptyObjectsAndUndefined<T>(target: T): any {
+    // if not a plain object, skip
+    if (target === null || target === undefined || !Object.getPrototypeOf(target).isPrototypeOf(Object)) return target;
+    if (Object.keys(target).length === 0) return undefined;
+
+    if (target as any == 0) return;
+
+    const out: any = {}
+    for (let objKey in target) {
+        // if an empty object, do not add
+        const newVal = deleteEmptyObjectsAndUndefined(target[objKey]);
+        if (newVal !== undefined) out[objKey] = newVal;
+    }
+
     return out;
 }

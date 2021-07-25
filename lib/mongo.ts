@@ -1,6 +1,6 @@
 import { PreMiddlewareFunction, Schema, SchemaDefinition } from "mongoose";
 import injectValidationCreators from "./validateUtils"
-import { deepAssign, flatten } from "./utils";
+import { flatten } from "./utils";
 import { FieldConstraintsCollection, Flattened, FlattenedValue } from "./";
 
 export const { stringValidate, numberValidate } = injectValidationCreators(createValidation, createValidateMiddleware);
@@ -24,10 +24,8 @@ export const finalValidationCallbacks = {
     greaterOrEqualTo: numberValidate.greaterOrEqualTo
 }
 
-export function constructSchema(fieldsPublic: FieldConstraintsCollection, fieldsPrivate: FieldConstraintsCollection = {}) {
-
-    // since Object.assign gives us a shallow copy, we can't use it
-    const mergedFields = flatten(deepAssign(fieldsPublic, fieldsPrivate));
+export function constructSchema(inputFields: FieldConstraintsCollection) {
+    const flattened = flatten(inputFields);
 
     function recursivelyApplySettings(fields: Flattened) {
         const schemaSettings: SchemaDefinition<undefined> = {};
@@ -62,7 +60,6 @@ export function constructSchema(fieldsPublic: FieldConstraintsCollection, fields
                 }
 
                 if (paramOptionName in finalValidationCallbacks) {
-                    console.log("final validation")
                     const outVals = [(finalValidationCallbacks as any)[paramOptionName], paramName];
 
                     if (Array.isArray(paramOption)) outVals.push(...paramOption);
@@ -87,7 +84,7 @@ export function constructSchema(fieldsPublic: FieldConstraintsCollection, fields
         return out;
     }
 
-    return recursivelyApplySettings(mergedFields);
+    return recursivelyApplySettings(flattened);
 }
 
 // "current" means that those values are no longer general

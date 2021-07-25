@@ -1,12 +1,13 @@
 export * from "./mongo"
 export * from "./utils"
 export * from "./validateUtils"
+export * from "./ajvJTD"
 // storage
 export interface Field<T> {
-    enum?: T extends StringConstructor ? Array<string> : undefined,
-    maxLength?: T extends StringConstructor ? number : undefined
-    exactLength?: T extends StringConstructor ? number : undefined
-    greaterOrEqualTo?: T extends NumberConstructor ? string | string[] : undefined
+    enum?: T extends StringConstructor ? Array<string> : never,
+    maxLength?: T extends StringConstructor ? number : never
+    exactLength?: T extends StringConstructor ? number : never
+    greaterOrEqualTo?: T extends NumberConstructor ? string | string[] : never
     lazyFill?: boolean,
     unique?: boolean,
     default?:
@@ -14,7 +15,7 @@ export interface Field<T> {
     T extends NumberConstructor ? number :
     T extends DateConstructor ? Date :
     T extends BooleanConstructor ? boolean :
-    undefined
+    never
 }
 
 export interface FieldGroup<T> {

@@ -175,49 +175,6 @@ describe("mongo.ts", function () {
             expect(constructSchema(o)).to.deep.equal(new mongoose.Schema(expected))
         })
 
-        it("should merge the two passed objects", function () {
-            const o1: FieldConstraintsCollection = {
-                required: {
-                    string: {
-                        name1: { maxLength: 4 }
-                    }
-                },
-                optional: {
-                    string: {
-                        name2: { lazyFill: true }
-                    }
-                }
-            }
-
-            const o2: FieldConstraintsCollection = {
-                optional: {
-                    string: {
-                        name2: { maxLength: 9 },
-                        secret: {}
-                    }
-                }
-            }
-
-            const expected: SchemaDefinition<any> = {
-                name1: {
-                    type: String,
-                    required: true,
-                    validate: validateCallbacks.maxLength(4),
-                },
-                name2: {
-                    type: String,
-                    required: false,
-                    validate: validateCallbacks.maxLength(9),
-                },
-                secret: {
-                    type: String,
-                    required: false,
-                },
-            }
-
-            expect(constructSchema(o1, o2)).to.deep.equal(new mongoose.Schema(expected))
-        })
-
         it("Should set correct validation functions", function () {
             const pre = spy(() => { })
             schemaSpy.callsFake((args) => {

@@ -1,6 +1,6 @@
 import { expect } from "chai";
 import { describe } from "mocha"
-import { deepAssign, flatten } from "../lib/utils"
+import { deepAssign, deleteEmptyObjectsAndUndefined, flatten } from "../lib/utils"
 
 describe("utils.ts", function () {
     describe("#deepAssign()", function () {
@@ -8,6 +8,8 @@ describe("utils.ts", function () {
             expect(deepAssign(1, 2)).to.equal(2);
             expect(deepAssign(undefined, 2)).to.equal(2);
             expect(deepAssign(1, undefined)).to.equal(1);
+            expect(deepAssign(1, null)).to.equal(null);
+            expect(deepAssign(null, 1)).to.equal(1);
         })
 
         it("should determine the return type based on the first argument", async function () {
@@ -195,6 +197,51 @@ describe("utils.ts", function () {
                 num: { type: "number", default: 3, required: true },
                 dat: { type: "date", required: true },
             })
+        })
+    })
+
+    describe("#deleteEmptyObjects()", function () {
+        it("should not alter a legitimate object", function () {
+            const obj = {
+                test: 3,
+                val: 3.4,
+                str: "test string",
+                nul: null,
+                bool: true,
+                nested: {
+                    type: "object",
+                    date: new Date(0)
+                }
+            }
+
+            expect(deleteEmptyObjectsAndUndefined(obj)).to.deep.equal(obj);
+        })
+
+        it("should delete empty objects and undefined, even in nested objects", function () {
+            const obj = {
+                test: 3,
+                val: 3.4,
+                empty: {},
+                str: "test string",
+                undef: undefined,
+                nested: {
+                    emptyObj: {},
+                    type: "object",
+                    undef: undefined,
+                    date: new Date(0)
+                }
+            }
+            const expected = {
+                test: 3,
+                val: 3.4,
+                str: "test string",
+                nested: {
+                    type: "object",
+                    date: new Date(0)
+                }
+            }
+
+            expect(deleteEmptyObjectsAndUndefined(obj)).to.deep.equal(expected);
         })
     })
 })
