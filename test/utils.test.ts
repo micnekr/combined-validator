@@ -158,46 +158,6 @@ describe("utils.ts", function () {
                 dat: { type: "date", required: true },
             })
         })
-
-        it("should ignore proto properties", function () {
-            const out = flatten({
-                required: {
-                    string: {
-                        str: { maxLength: 6, default: "hello" }
-                    },
-                    number: {
-                        num: { default: 3 }
-                    },
-                    date: {
-                        dat: {
-                            // @ts-ignore
-                            __proto__: {
-                                shouldNotBeAround: "test"
-                            }
-                        },
-                        // @ts-ignore
-                        __proto__: {
-                            // @ts-ignore
-                            shouldNotBeAround: "test"
-                        }
-                    },
-                    // @ts-ignore
-                    __proto__: {
-                        shouldNotBeAround: "test"
-                    }
-                },
-                // @ts-ignore
-                __proto__: {
-                    shouldNotBeAround: "test"
-                }
-            })
-
-            expect(out).to.deep.equal({
-                str: { type: "string", maxLength: 6, default: "hello", required: true },
-                num: { type: "number", default: 3, required: true },
-                dat: { type: "date", required: true },
-            })
-        })
     })
 
     describe("#deleteEmptyObjects()", function () {

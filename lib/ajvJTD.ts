@@ -35,13 +35,14 @@ export function createAjvJTDSchema(inputFields: FieldConstraintsCollection) {
         for (let paramName in fields) {
             const paramOptions = fields[paramName];
 
+            // if can be resolved straight away
             if (typeof paramOptions.type === "string") {
                 if (!(paramOptions.type in fieldTypesByTypeName)) throw new Error(`unknown type: ${paramOptions.type}`)
                 const fieldType = (fieldTypesByTypeName as any)[paramOptions.type] as string;
                 const target = paramOptions.required ? out.properties : out.optionalProperties;
                 (target as any)[paramName] = { type: fieldType }
-            } else {
-                const nextRef = refGenerator.next().value as string
+            } else if (typeof paramOptions.type === "object") {
+                const nextRef = refGenerator.next().value as string;
                 const target = paramOptions.required ? out.properties : out.optionalProperties;
                 (target as any)[paramName] = { ref: nextRef };
                 (definitions as any)[nextRef] = recursivelyApplySettings(paramOptions.type);

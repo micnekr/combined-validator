@@ -34,7 +34,7 @@ export function constructSchema(inputFields: FieldConstraintsCollection) {
         for (let paramName in fields) {
             const paramOptions = fields[paramName];
 
-            // if a flattened object
+            // if a flattened object, do it recursively
             if (typeof paramOptions.type !== "string") {
                 (schemaSettings as any)[paramName] = {
                     type: recursivelyApplySettings(paramOptions.type),
@@ -60,6 +60,7 @@ export function constructSchema(inputFields: FieldConstraintsCollection) {
                 }
 
                 if (paramOptionName in finalValidationCallbacks) {
+                    // the first value is the validation callback, the others are the values to check
                     const outVals = [(finalValidationCallbacks as any)[paramOptionName], paramName];
 
                     if (Array.isArray(paramOption)) outVals.push(...paramOption);
@@ -78,7 +79,6 @@ export function constructSchema(inputFields: FieldConstraintsCollection) {
         finalValidationCallbacksForThisSchema.forEach((settings) => {
             const validator = settings.shift();
 
-            // make sure all the parameters are required (otherwise the functions do not make much sense)
             out.pre("validate", validator(settings));
         })
         return out;

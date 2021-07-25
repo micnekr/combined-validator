@@ -1,4 +1,4 @@
-import { FieldConstraintsCollection, Flattened, FieldTypeContainer, FieldGroup } from "./";
+import { FieldConstraintsCollection, Flattened, FieldTypeContainer, FieldGroup, Field } from "./";
 
 //NOTE: this function is NOT SAFE and therefore should never be used with user input
 export function deepAssign<T>(target: T, src: T) {
@@ -22,18 +22,16 @@ export function flatten(fields: FieldConstraintsCollection) {
     const out: Flattened = {};
 
     for (let typeContainerKey in fields) {
-        if (!fields.hasOwnProperty(typeContainerKey)) continue;
         const typeContainer: FieldTypeContainer = (fields as any)[typeContainerKey];
         const isRequired = typeContainerKey === "required";
 
         for (let groupName in typeContainer) {
             // if an object, recurse
-            if (!typeContainer.hasOwnProperty(groupName)) continue;
             const fieldGroup: FieldGroup<any> | FieldConstraintsCollection = (typeContainer as any)[groupName];
             for (let entryName in fieldGroup) {
-                if (!fieldGroup.hasOwnProperty(entryName)) continue;
                 const additionalData = (fieldGroup as any)[entryName];
 
+                // recurse if needed
                 if (groupName === "object") {
                     out[entryName] = {
                         type: flatten(additionalData),
@@ -41,12 +39,13 @@ export function flatten(fields: FieldConstraintsCollection) {
                     }
                     continue;
                 }
+
+                // else, copy over all the needed values
                 out[entryName] = {
                     type: groupName,
                     required: isRequired,
                 };
                 for (let additionalDataName in additionalData) {
-                    if (!additionalData.hasOwnProperty(additionalDataName)) continue;
                     out[entryName][additionalDataName] = additionalData[additionalDataName];
                 }
             }

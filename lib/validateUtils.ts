@@ -1,9 +1,7 @@
 import { FinalValidationCreator, ValidationCreator } from "./"
 
-export function isDescendingOrder(resolvedFields: any[]) {
-    return resolvedFields.every((value: any, index: number) => {
-        return index == resolvedFields.length - 1 || value >= resolvedFields[index + 1]
-    })
+export function isGreaterOrEqualTo(resolvedFields: any[]) {
+    return resolvedFields[0] >= resolvedFields[1]
 }
 
 export const isExactLength = (value: string, length: number) => value.length == length;
@@ -18,7 +16,7 @@ export default function injectValidationCreators(createValidation: ValidationCre
         },
 
         numberValidate: {
-            greaterOrEqualTo: createFinalValidation("The fields need to be in descending order or equal", false, isDescendingOrder)
+            greaterOrEqualTo: createFinalValidation("The fields need to be in descending order or equal", false, isGreaterOrEqualTo)
         }
     }
 }
