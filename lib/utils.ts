@@ -1,4 +1,4 @@
-import { FieldConstraintsCollection, Flattened, FieldTypeContainer, FieldGroup, Field } from "./";
+import { FieldConstraintsCollection, Flattened, FieldTypeContainer, FieldGroup } from "./";
 
 //NOTE: this function is NOT SAFE and therefore should never be used with user input
 export function deepAssign<T>(target: T, src: T) {
@@ -60,8 +60,6 @@ export function deleteEmptyObjectsAndUndefined<T>(target: T): any {
     if (target === null || target === undefined || !Object.getPrototypeOf(target).isPrototypeOf(Object)) return target;
     if (Object.keys(target).length === 0) return undefined;
 
-    if (target as any == 0) return;
-
     const out: any = {}
     for (let objKey in target) {
         // if an empty object, do not add
@@ -70,4 +68,12 @@ export function deleteEmptyObjectsAndUndefined<T>(target: T): any {
     }
 
     return out;
+}
+
+export const fieldTypesByTypeName = {
+    string: String,
+    number: Number,
+    boolean: Boolean,
+    date: Date,
+    object: Object,
 }

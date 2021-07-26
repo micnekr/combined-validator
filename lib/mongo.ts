@@ -1,17 +1,9 @@
 import { PreMiddlewareFunction, Schema, SchemaDefinition } from "mongoose";
 import injectValidationCreators from "./validateUtils"
-import { flatten } from "./utils";
+import { fieldTypesByTypeName, flatten } from "./utils";
 import { FieldConstraintsCollection, Flattened, FlattenedValue } from "./";
 
 export const { stringValidate, numberValidate } = injectValidationCreators(createValidation, createValidateMiddleware);
-
-const fieldTypesByTypeName = {
-    string: String,
-    number: Number,
-    boolean: Boolean,
-    date: Date,
-    object: Object,
-}
 
 export const valuesToApply = ["default", "enum", "unique"];
 
