@@ -2,7 +2,7 @@ import { expect } from "chai";
 import { SchemaDefinition } from "mongoose";
 import { SinonStub, restore, spy, stub } from "sinon";
 import { FieldConstraintsCollection } from "..";
-import { constructSchema, validateCallbacks, finalValidationCallbacks, createValidateMiddleware, createValidation } from "../lib/mongo"
+import { constructSchema, mongoValidateCallbacks, mongoFinalValidationCallbacks, mongoCreateValidateMiddleware, mongoCreateValidation } from "../lib/mongo"
 
 const mongoose = require("mongoose"); // for stubbing
 
@@ -14,9 +14,9 @@ describe("mongo.ts", function () {
             // stub the dependency
             // @ts-ignore
             schemaSpy = stub(mongoose, "Schema").callsFake((args) => args);
-            const stringMaxLengthStub = stub(validateCallbacks, "maxLength").callsFake((args) => `maxLen${args}` as any);
-            const stringExactLengthStub = stub(validateCallbacks, "exactLength").callsFake((args) => `exactLength${args}` as any);
-            const numberGreaterOrEqualToStub = stub(finalValidationCallbacks, "greaterOrEqualTo").callsFake((args) => `greaterOrEqualTo${args}` as any);
+            const stringMaxLengthStub = stub(mongoValidateCallbacks, "maxLength").callsFake((args) => `maxLen${args}` as any);
+            const stringExactLengthStub = stub(mongoValidateCallbacks, "exactLength").callsFake((args) => `exactLength${args}` as any);
+            const numberGreaterOrEqualToStub = stub(mongoFinalValidationCallbacks, "greaterOrEqualTo").callsFake((args) => `greaterOrEqualTo${args}` as any);
         })
 
         this.afterEach(function () {
@@ -164,7 +164,7 @@ describe("mongo.ts", function () {
                 name1: {
                     type: String,
                     required: true,
-                    validate: validateCallbacks.maxLength(4),
+                    validate: mongoValidateCallbacks.maxLength(4),
                 },
                 name2: {
                     type: String,
@@ -202,12 +202,12 @@ describe("mongo.ts", function () {
                 name1: {
                     type: String,
                     required: true,
-                    validate: validateCallbacks.maxLength(4),
+                    validate: mongoValidateCallbacks.maxLength(4),
                 },
                 name2: {
                     type: String,
                     required: true,
-                    validate: validateCallbacks.exactLength(4),
+                    validate: mongoValidateCallbacks.exactLength(4),
                 },
                 num1: {
                     type: Number,
@@ -234,15 +234,15 @@ describe("mongo.ts", function () {
 
             expect(constructSchema(o)).to.deep.equal(expected);
             expect(pre.callCount, "the pre hook should be called once").to.equal(2);
-            expect(pre.args).to.deep.include(["validate", finalValidationCallbacks.greaterOrEqualTo(["num1", "num2"])]);
-            expect(pre.args).to.deep.include(["validate", finalValidationCallbacks.greaterOrEqualTo(["num3", "num4", "num5"])]);
+            expect(pre.args).to.deep.include(["validate", mongoFinalValidationCallbacks.greaterOrEqualTo(["num1", "num2"])]);
+            expect(pre.args).to.deep.include(["validate", mongoFinalValidationCallbacks.greaterOrEqualTo(["num3", "num4", "num5"])]);
         })
     })
 
     describe("#createValidation()", function () {
         const arrowFunctionSpy = spy(() => false);
         const testArgs = ["testarg1", { test: "testarg2" }];
-        const out = createValidation("Error message", arrowFunctionSpy)(...testArgs);
+        const out = mongoCreateValidation("Error message", arrowFunctionSpy)(...testArgs);
         out.validator("value");
 
         it("Should create a correct validation structure", function () {
@@ -266,7 +266,7 @@ describe("mongo.ts", function () {
                 return returnValue;
             });
             const nextSpy = spy(() => { })
-            const middlewareFun = createValidateMiddleware("Error message", automaticResponseToUndefined, spyFun)(["testName1", "testName2"]);
+            const middlewareFun = mongoCreateValidateMiddleware("Error message", automaticResponseToUndefined, spyFun)(["testName1", "testName2"]);
             middlewareFun.bind(obj)(nextSpy);
             return [spyFun, nextSpy];
         }

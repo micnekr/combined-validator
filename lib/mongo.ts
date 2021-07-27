@@ -1,18 +1,18 @@
 import { PreMiddlewareFunction, Schema, SchemaDefinition } from "mongoose";
-import injectValidationCreators from "./validateUtils"
+import injectValidationCreators, { callOverallValidationFunction } from "./validateUtils"
 import { fieldTypesByTypeName, flatten } from "./utils";
 import { FieldConstraintsCollection, Flattened, FlattenedValue } from "./";
 
-export const { stringValidate, numberValidate } = injectValidationCreators(createValidation, createValidateMiddleware);
+const { stringValidate, numberValidate } = injectValidationCreators(mongoCreateValidation, mongoCreateValidateMiddleware);
 
-export const valuesToApply = ["default", "enum", "unique"];
+export const mongoValuesToApply = ["default", "enum", "unique"];
 
-export const validateCallbacks = {
+export const mongoValidateCallbacks = {
     maxLength: stringValidate.maxLength,
     exactLength: stringValidate.exactLength
 }
 
-export const finalValidationCallbacks = {
+export const mongoFinalValidationCallbacks = {
     greaterOrEqualTo: numberValidate.greaterOrEqualTo
 }
 
@@ -41,19 +41,19 @@ export function constructSchema(inputFields: FieldConstraintsCollection) {
                 if (paramOptionName === "type" || paramOptionName === "required") continue
                 const paramOption = paramOptions[paramOptionName];
 
-                if (paramOptionName in validateCallbacks) {
-                    currentEntry["validate"] = (validateCallbacks as any)[paramOptionName](paramOption);
+                if (paramOptionName in mongoValidateCallbacks) {
+                    currentEntry["validate"] = (mongoValidateCallbacks as any)[paramOptionName](paramOption);
                     continue;
                 }
 
-                if (valuesToApply.includes(paramOptionName)) {
+                if (mongoValuesToApply.includes(paramOptionName)) {
                     currentEntry[paramOptionName] = paramOption;
                     continue;
                 }
 
-                if (paramOptionName in finalValidationCallbacks) {
+                if (paramOptionName in mongoFinalValidationCallbacks) {
                     // the first value is the validation callback, the others are the values to check
-                    const outVals = [(finalValidationCallbacks as any)[paramOptionName], paramName];
+                    const outVals = [(mongoFinalValidationCallbacks as any)[paramOptionName], paramName];
 
                     if (Array.isArray(paramOption)) outVals.push(...paramOption);
                     else outVals.push(paramOption);
@@ -80,25 +80,20 @@ export function constructSchema(inputFields: FieldConstraintsCollection) {
 }
 
 // "current" means that those values are no longer general
-export function createValidation<T>(message: string, validate: (toCheck: T, ...referenceVals: any[]) => boolean) { // options specific to the check in general
-    return function (...currentReferenceVals: any[]) { // options specific to the current value
+export function mongoCreateValidation<T>(message: string, validate: (toCheck: T, ...referenceVals: any[]) => boolean) { // options specific to the check in general
+    return function (...checkSettings: any[]) { // options specific to the current value
         return {
             message,
-            validator: (value: T) => validate.apply(null, [value, ...currentReferenceVals])
+            validator: (value: T) => validate.apply(null, [value, ...checkSettings])
         }
     }
 }
 
-export function createValidateMiddleware(message: string, automaticResponseToUndefined: boolean | null, callback: (resolvedFields: any[], toValidate: any, fields: any[]) => boolean) {
-    return function (fields: any[]) {
+export function mongoCreateValidateMiddleware(message: string, automaticResponseToUndefined: boolean | null, callback: (resolvedFields: any[], toValidate: any, fields: any[]) => boolean) {
+    return function (fieldsRequiredToValidate: any[]) {
         const out: PreMiddlewareFunction<any> = function (next) {
-            const resolvedFields = fields.map((k) => this[k]);
-
-            const hasSucceeded = automaticResponseToUndefined !== null && resolvedFields.some((k) => k === undefined) ? // if has undefined fields and we need to care about them,
-                automaticResponseToUndefined : // return the pre-defined value
-                callback(resolvedFields, this, fields); // else, validate
-            if (hasSucceeded) return next();
-            throw new Error(`${message}; Fields for validation: ${fields}`);
+            if (callOverallValidationFunction(fieldsRequiredToValidate, this, automaticResponseToUndefined, callback)) return next();
+            throw new Error(`${message}; Fields for validation: ${fieldsRequiredToValidate}`);
         }
         return out;
     }

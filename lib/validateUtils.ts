@@ -20,3 +20,11 @@ export default function injectValidationCreators(createValidation: ValidationCre
         }
     }
 }
+
+export function callOverallValidationFunction(fieldsRequiredToValidate: any[], toValidate: any, automaticResponseToUndefined: boolean | null, callback: (resolvedFields: any[], toValidate: any, fields: any[]) => boolean) {
+    const resolvedFields = fieldsRequiredToValidate.map((k) => toValidate[k]);
+
+    return automaticResponseToUndefined !== null && resolvedFields.some((k) => k === undefined) ? // if has undefined fields and we need to care about them,
+        automaticResponseToUndefined : // return the pre-defined value
+        callback(resolvedFields, toValidate, fieldsRequiredToValidate); // else, validate
+}

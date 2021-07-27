@@ -2,6 +2,8 @@ export * from "./mongo"
 export * from "./utils"
 export * from "./validateUtils"
 export * from "./ajvJTD"
+export * from "./general"
+
 // storage
 export interface Field<T> {
     enum?: T extends StringConstructor ? Array<string> : never,
