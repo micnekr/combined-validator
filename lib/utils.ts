@@ -11,6 +11,7 @@ export function deepAssign<T>(target: T, src: T) {
 
     const out = (Array.isArray(target)) ? [] : {}; // the original Object.assign seems to select the type based on the target
     keys.forEach((k) => {
+        if (src.hasOwnProperty(k) && (src as any)[k] === undefined) return; // if the property was specifically overwritten, leave it out
         (out as any)[k] = deepAssign((target as any)[k], (src as any)[k])
     })
     return out as T;

@@ -19,6 +19,22 @@ describe("utils.ts", function () {
             expect(deepAssign({}, [])).to.deep.equal({});
         })
 
+        it("should allow deleting keys by setting the value to undefined", async function () {
+            expect(deepAssign({
+                a: "b",
+                undef: "test",
+                nested: {
+                    undef: "test"
+                }
+            }, {
+                a: "b",
+                undef: undefined,
+                nested: undefined
+            })).to.deep.equal({
+                a: "b"
+            });
+        })
+
         it("should copy and override properties", async function () {
             expect(deepAssign({ test: 4 }, { test2: 5 })).to.deep.equal({
                 test: 4,
