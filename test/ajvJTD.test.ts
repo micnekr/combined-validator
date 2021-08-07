@@ -170,7 +170,44 @@ describe("ajvJTD.ts", function () {
                 expect(parser(JSON.stringify(expectedToBeParsed))).to.deep.equal(undefined);
             })
 
-            it("should throw if the type is not recognised", function () {
+            it("should correctly process enums", function () {
+                const out1 = createAjvJTDSchema({
+                    optional: {
+                        string: {
+                            foo: { enum: ["3", "4", "5"] }
+                        },
+                    },
+                })
+
+                expect(out1).to.deep.equal({
+                    optionalProperties: {
+                        foo:
+                            { enum: ["3", "4", "5"] }
+                    }
+                })
+
+                const parser = ajv.compileParser(out1)
+
+                let expectedToBeParsed = {
+                    foo: "3"
+                }
+
+                expect(parser(JSON.stringify(expectedToBeParsed))).to.deep.equal(expectedToBeParsed)
+            })
+
+            // it("should correctly process arrays", function () {
+            //     const out1 = createAjvJTDSchema({
+            //         optional: {
+            //             string: {
+            //                 foo: { array: true }
+            //             },
+            //         },
+            //     })
+
+            //     // console.log(out1);
+            // })
+
+            it("should throw an exception if the type is not recognised", function () {
                 const triggerException = () => createAjvJTDSchema({
                     required: {
                         notExist: {

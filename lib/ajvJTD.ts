@@ -40,7 +40,12 @@ export function createAjvJTDSchema(inputFields: FieldConstraintsCollection) {
                 if (!(paramOptions.type in fieldTypesByTypeName)) throw new Error(`unknown type: ${paramOptions.type}`)
                 const fieldType = (fieldTypesByTypeName as any)[paramOptions.type] as string;
                 const target = paramOptions.required ? out.properties : out.optionalProperties;
-                (target as any)[paramName] = { type: fieldType }
+
+                if (paramOptions.enum !== undefined)
+                    (target as any)[paramName] = { enum: paramOptions.enum }
+                else
+                    (target as any)[paramName] = { type: fieldType }
+
             } else if (typeof paramOptions.type === "object") {
                 const nextRef = refGenerator.next().value as string;
                 const target = paramOptions.required ? out.properties : out.optionalProperties;

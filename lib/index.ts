@@ -10,8 +10,8 @@ export interface Field<T> {
     maxLength?: T extends StringConstructor ? number : never
     exactLength?: T extends StringConstructor ? number : never
     greaterOrEqualTo?: T extends NumberConstructor ? string | string[] : never
-    lazyFill?: boolean,
     unique?: boolean,
+    array?: boolean,
     default?:
     T extends StringConstructor ? string :
     T extends NumberConstructor ? number :
@@ -31,7 +31,7 @@ export interface FieldTypeContainer {
     boolean?: FieldGroup<BooleanConstructor>,
     object?: {
         [key: string]: FieldConstraintsCollection
-    }
+    },
 }
 
 export interface FieldConstraintsCollection {
