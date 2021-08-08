@@ -30,12 +30,28 @@ export function extract(target: any, rules: Flattened) {
 
         if (typeof entryRequirementsInfo.type === "string") {
             // check if the data is correct
-            const dataClass = (fieldTypesByTypeName as any)[entryRequirementsInfo.type];
-            if (dataClass !== undefined && (entry instanceof dataClass || typeof entry === entryRequirementsInfo.type)) out[requiredKey] = entry;
-            else throw new Error(constructErrorMessage(entry, `should be a ${entryRequirementsInfo.type}`));
+            const dataType = (fieldTypesByTypeName as any)[entryRequirementsInfo.type];
+            const isArray = entryRequirementsInfo.array === true;
+
+            const isCorrectType = (v: any) => v instanceof dataType || typeof v === entryRequirementsInfo.type
+
+            if (dataType === undefined) throw new Error(constructErrorMessage(entry, ` can not be processed because the type ${dataType} is not defined`));
+            if (!isArray) {
+                // checking that the type is correct
+                if (isCorrectType(entry)) out[requiredKey] = entry;
+                else throw new Error(constructErrorMessage(entry, `should be a ${entryRequirementsInfo.type}`));
+            } else {
+                if (!Array.isArray(entry)) throw new Error(constructErrorMessage(entry, `should be an array of ${entryRequirementsInfo.type}[]`));
+                if (!entry.every((v) => isCorrectType(v))) throw new Error(constructErrorMessage(entry, `should be an array of ${entryRequirementsInfo.type}[]`));
+                out[requiredKey] = entry
+            }
         } else {
+            const isArray = entryRequirementsInfo.array === true;
+            const type = entryRequirementsInfo.type
+
             // if it is a nested array, recurse
-            out[requiredKey] = extract(entry, entryRequirementsInfo.type);
+            if (isArray) out[requiredKey] = entry.map(((v: any) => extract(v, type)))
+            else out[requiredKey] = extract(entry, type);
         }
     }
 
@@ -49,41 +65,46 @@ export function extractAndValidate(target: any, rules: Flattened) {
 
     function recursivelyApplySettings(currentTarget: any, currentRules: Flattened) {
         for (let currentElementName in currentTarget) {
-            const currentElement = currentTarget[currentElementName];
+            let currentElementArray = currentTarget[currentElementName];
             const currentRule = currentRules[currentElementName];
 
-            // if a flattened object, do it recursively
-            if (typeof currentRule.type !== "string") {
-                recursivelyApplySettings(currentElement, currentRule.type);
-                continue;
-            }
+            if (currentRule.array !== true) currentElementArray = [currentElementArray]
 
-            for (let optionName in currentRule) {
-                if (optionName === "type" || optionName === "required") continue // skip if it is not a rule
-                const option = currentRule[optionName];
+            for (let currentElement of currentElementArray) { // TODO: this loop is not needed for final validation callbacks
 
-                if (optionName === "enum") {
-                    if (!option.includes(currentElement)) throw new Error(`The enum "${currentElementName}" with the value "${currentElement}" must have one of the following values: "${option}"`)
-                }
-
-                if (optionName in generalValidateCallbacks) {
-                    try {
-                        (generalValidateCallbacks as any)[optionName](currentElement, option);
-                    } catch (e) {
-                        throw new Error(`The "${optionName}" constraint with the value "${option}" was not met by the field "${currentElementName}" with the value "${currentElement}" with an error message saying "${e.message}"`)
-                    }
-                }
-
-                if (optionName in generalFinalValidationCallbacks) {
-                    // the first value is the validation callback, the others are the values to check
-                    const outVals = [(generalFinalValidationCallbacks as any)[optionName], currentElementName];
-
-                    if (Array.isArray(option)) outVals.push(...option);
-                    else outVals.push(option);
-
-                    finalValidationCalls.push(outVals);
-
+                // if a flattened object, do it recursively
+                if (typeof currentRule.type !== "string") {
+                    recursivelyApplySettings(currentElement, currentRule.type);
                     continue;
+                }
+
+                for (let optionName in currentRule) {
+                    if (optionName === "type" || optionName === "required") continue // skip if it is not a rule
+                    const option = currentRule[optionName];
+
+                    if (optionName === "enum") {
+                        if (!option.includes(currentElement)) throw new Error(`The enum "${currentElementName}" with the value "${currentElement}" must have one of the following values: "${option}"`)
+                    }
+
+                    if (optionName in generalValidateCallbacks) {
+                        try {
+                            (generalValidateCallbacks as any)[optionName](currentElement, option);
+                        } catch (e) {
+                            throw new Error(`The "${optionName}" constraint with the value "${option}" was not met by the field "${currentElementName}" with the value "${currentElement}" with an error message saying "${e.message}"`)
+                        }
+                    }
+
+                    if (optionName in generalFinalValidationCallbacks) {
+                        // the first value is the validation callback, the others are the values to check
+                        const outVals = [(generalFinalValidationCallbacks as any)[optionName], currentElementName];
+
+                        if (Array.isArray(option)) outVals.push(...option); // TODO: test this
+                        else outVals.push(option);
+
+                        finalValidationCalls.push(outVals);
+
+                        continue;
+                    }
                 }
             }
         }

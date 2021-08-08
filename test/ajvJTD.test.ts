@@ -195,17 +195,75 @@ describe("ajvJTD.ts", function () {
                 expect(parser(JSON.stringify(expectedToBeParsed))).to.deep.equal(expectedToBeParsed)
             })
 
-            // it("should correctly process arrays", function () {
-            //     const out1 = createAjvJTDSchema({
-            //         optional: {
-            //             string: {
-            //                 foo: { array: true }
-            //             },
-            //         },
-            //     })
+            it("should correctly process arrays", function () {
+                const out1 = createAjvJTDSchema({
+                    optional: {
+                        string: {
+                            foo: { array: true }
+                        },
+                    },
+                })
+                const out2 = createAjvJTDSchema({
+                    optional: {
+                        object: {
+                            foo: {
+                                required: {
+                                    string: {
+                                        email: {}
+                                    }
+                                },
+                                array: true
+                            }
+                        }
+                    },
+                })
+                const out3 = createAjvJTDSchema({
+                    optional: {
+                        object: {
+                            foo: {
+                                required: {
+                                    object: {
+                                        email: {
+                                            required: {
+                                                string: {
+                                                    more: {}
+                                                }
+                                            },
+                                            array: true
+                                        }
+                                    }
+                                },
+                                array: true
+                            }
+                        }
+                    },
+                })
 
-            //     // console.log(out1);
-            // })
+                const expectedOut1 = {
+                    foo: ["bar", "test", "r"]
+                }
+                const expectedOut2 = {
+                    foo: [
+                        { email: "bar" },
+                        { email: "test" },
+                        { email: "r" }
+                    ]
+                }
+
+                const expectedOut3 = {
+                    foo: [
+                        { email: [{ more: "bar" }, { more: "test" }] },
+                        { email: [{ more: "r" }] }
+                    ]
+                }
+
+                let parser = ajv.compileParser(out1)
+                expect(parser(JSON.stringify(expectedOut1))).to.deep.equal(expectedOut1)
+                parser = ajv.compileParser(out2)
+                expect(parser(JSON.stringify(expectedOut2))).to.deep.equal(expectedOut2)
+                parser = ajv.compileParser(out3)
+                expect(parser(JSON.stringify(expectedOut3))).to.deep.equal(expectedOut3)
+            })
 
             it("should throw an exception if the type is not recognised", function () {
                 const triggerException = () => createAjvJTDSchema({

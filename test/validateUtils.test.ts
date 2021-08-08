@@ -9,7 +9,7 @@ describe("Predicates", function () {
             expect(isGreaterOrEqualTo([4, 10, 3, 9])).to.be.false;
         })
         it("Should return true when the first value is equal to the second one", function () {
-            expect(isGreaterOrEqualTo([1, 1, 3, 4, 5, 6])).to.be.true;
+            expect(isGreaterOrEqualTo([7, 7, 3, 4, 5, 6])).to.be.true;
         })
     })
 

@@ -3,7 +3,7 @@ import { flatten } from "../lib"
 import { extract, extractAndValidate } from "../lib/general"
 
 describe("general.ts", function () {
-    describe("#pickNeededEntries()", function () {
+    describe("#extract()", function () {
         it("should create an object with the requested keys, while ignoring the unspecified ones", function () {
             const input = {
                 str: "test string",
@@ -12,7 +12,11 @@ describe("general.ts", function () {
                 dat: new Date(),
                 obj: {
                     foo: "bar"
-                }
+                },
+                arrayValue: [3, 4, 6],
+                objectArray: [{
+                    foo: "bar"
+                }],
             }
 
             const inputWithJunk = {
@@ -24,7 +28,11 @@ describe("general.ts", function () {
                 obj: {
                     shouldNotBePresent: 6,
                     foo: "bar"
-                }
+                },
+                arrayValue: [3, 4, 6],
+                objectArray: [{
+                    foo: "bar"
+                }],
             }
 
             const schema = flatten({
@@ -33,7 +41,8 @@ describe("general.ts", function () {
                         str: {}
                     },
                     number: {
-                        num: {}
+                        num: {},
+                        arrayValue: { array: true }
                     },
                     boolean: {
                         bool: {}
@@ -43,6 +52,14 @@ describe("general.ts", function () {
                     },
                     object: {
                         obj: {
+                            required: {
+                                string: {
+                                    foo: {}
+                                }
+                            }
+                        },
+                        objectArray: {
+                            array: true,
                             required: {
                                 string: {
                                     foo: {}
@@ -100,8 +117,19 @@ describe("general.ts", function () {
             const schema = flatten({
                 optional: {
                     number: {
-                        wrongType: {}
+                        wrongType: {},
+                        arr: { array: true }
                     },
+                    object: {
+                        objArr: {
+                            required: {
+                                number: {
+                                    three: {}
+                                }
+                            },
+                            array: true
+                        }
+                    }
                 },
                 required: {
                     number: {
@@ -120,6 +148,23 @@ describe("general.ts", function () {
             expect(() => extract(input, schema)).to.throw(/should be an object/);
             input = null
             expect(() => extract(input, schema)).to.throw(/should be an object/);
+            input = {
+                objArr: [2, 3, 4]
+            }
+            expect(() => extract(input, schema)).to.throw(/should be an object/);
+            input = {
+                objArr: [{ three: 2 }, 3, 4]
+            }
+            expect(() => extract(input, schema)).to.throw(/should be an object/);
+            input = {
+                arr: [3, "4", 5],
+            }
+            expect(() => extract(input, schema)).to.throw(/should be an array of number\[\]/);
+            input = {
+                arr: 7,
+            }
+            expect(() => extract(input, schema)).to.throw(/should be an array of number\[\]/);
+
         })
     })
 
@@ -313,6 +358,58 @@ describe("general.ts", function () {
             input.num = 100;
 
             expect(extractAndValidate(input, schema), "If the constraints do not fail, there should be no difference to the output").to.deep.equal(input);
+        })
+
+        it("should process arrays correctly", function () {
+            let input: any = {
+                num: 3,
+                num2: [1, 10],
+                num3: [10, 5, 4, 6, 3, 15, 16],
+                num4: 2,
+                obj: {
+                    foo: "bar"
+                },
+                str: ["a", "b", "c"]
+            }
+
+            let schema: any = flatten({
+                required: {
+                    number: {
+                        num: { greaterOrEqualTo: "num2" },
+                        num2: { array: true },
+                        num3: {greaterOrEqualTo: "num4", array: true},
+                        num4: {}
+                    },
+                    string: {
+                        str: { maxLength: 3, array: true }
+                    },
+                    object: {
+                        obj: {
+                            required: {
+                                string: {
+                                    foo: {}
+                                }
+                            }
+                        }
+                    }
+                }
+            })
+
+
+            expect(() => extractAndValidate(input, schema), "It should check against every element in the argument array for a final validation").to.throw(`A constraint failed with an error message saying "The fields need to be in descending order or equal; Fields for validation: num,num2"`);
+
+            input.num = 100; // clear up
+            input.num4 = 7;
+            
+            expect(() => extractAndValidate(input, schema), "It should check against every element in the value array for a final validation").to.throw(`A constraint failed with an error message saying "The fields need to be in descending order or equal; Fields for validation: num3,num4"`);
+            
+            input.num4 = 1;
+
+            expect(extractAndValidate(input, schema), "If the constraints do not fail, there should be no difference to the output").to.deep.equal(input);
+            
+            input.str[1] = "super long string";
+            
+            expect(() => extractAndValidate(input, schema), "It should check every element of the array for the constraint").to.throw(`The "maxLength" constraint with the value "3" was not met by the field "str" with the value "super long string" with an error message saying "This string field is too long"`);
         })
     })
 

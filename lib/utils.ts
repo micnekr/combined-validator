@@ -1,4 +1,4 @@
-import { FieldConstraintsCollection, Flattened, FieldTypeContainer, FieldGroup } from "./";
+import { FieldConstraintsCollection, Flattened, FieldTypeContainer, FieldGroup, AdditionalObjectFieldConstraintsCollection } from "./";
 
 //NOTE: this function is NOT SAFE and therefore should never be used with user input
 export function deepAssign<T>(target: T, src: T) {
@@ -19,12 +19,14 @@ export function deepAssign<T>(target: T, src: T) {
 
 //NOTE: this function is NOT SAFE and therefore should never be used with user input
 export function flatten(fields: FieldConstraintsCollection) {
-
     const out: Flattened = {};
 
     for (let typeContainerKey in fields) {
         const typeContainer: FieldTypeContainer = (fields as any)[typeContainerKey];
         const isRequired = typeContainerKey === "required";
+
+        // if it is an additional setting of an object, do not touch it because it has been recorded already
+        if (!["required", "optional"].includes(typeContainerKey)) continue;
 
         for (let groupName in typeContainer) {
             // if an object, recurse
@@ -34,9 +36,16 @@ export function flatten(fields: FieldConstraintsCollection) {
 
                 // recurse if needed
                 if (groupName === "object") {
+                    const fieldConstraintsCollection: FieldConstraintsCollection & AdditionalObjectFieldConstraintsCollection = additionalData;
+                    // add all the other keys, e.g. "array" if needed
+                    const fieldConstraintsCollectionCopy: AdditionalObjectFieldConstraintsCollection = Object.assign({}, fieldConstraintsCollection)
+                    delete (fieldConstraintsCollectionCopy as any).required;
+                    delete (fieldConstraintsCollectionCopy as any).optional; // removing those entries so that it becomes an AdditionalObjectFieldConstraintsCollection
+
                     out[entryName] = {
-                        type: flatten(additionalData),
+                        type: flatten(fieldConstraintsCollection),
                         "required": isRequired,
+                        ...fieldConstraintsCollectionCopy
                     }
                     continue;
                 }

@@ -24,14 +24,16 @@ export interface FieldGroup<T> {
     [key: string]: Field<T>
 }
 
+export type AdditionalObjectFieldConstraintsCollection = { array?: boolean };
+
 export interface FieldTypeContainer {
     string?: FieldGroup<StringConstructor>,
     number?: FieldGroup<NumberConstructor>,
     date?: FieldGroup<DateConstructor>,
     boolean?: FieldGroup<BooleanConstructor>,
     object?: {
-        [key: string]: FieldConstraintsCollection
-    },
+        [key: string]: FieldConstraintsCollection & AdditionalObjectFieldConstraintsCollection
+    }
 }
 
 export interface FieldConstraintsCollection {
