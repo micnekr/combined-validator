@@ -15,7 +15,7 @@ describe("general.ts", function () {
                 },
                 arrayValue: [3, 4, 6],
                 objectArray: [{
-                    foo: "bar"
+                    foo: "other bar"
                 }],
             }
 
@@ -31,7 +31,7 @@ describe("general.ts", function () {
                 },
                 arrayValue: [3, 4, 6],
                 objectArray: [{
-                    foo: "bar"
+                    foo: "other bar"
                 }],
             }
 
@@ -138,14 +138,14 @@ describe("general.ts", function () {
                 }
             })
 
-            expect(() => extract(input, schema)).to.throw(/should be a/);
+            expect(() => extract(input, schema)).to.throw(/is not of the expected type "number"/);
 
             input = {}
-            expect(() => extract(input, schema)).to.throw(/is required and should be present/);
+            expect(() => extract(input, schema)).to.throw(/does not have the required key/);
             input = "hello?"
             expect(() => extract(input, schema)).to.throw(/should be an object/);
             input = undefined
-            expect(() => extract(input, schema)).to.throw(/should be an object/);
+            expect(() => extract(input, schema)).to.throw(`Please supply an object to be validated`);
             input = null
             expect(() => extract(input, schema)).to.throw(/should be an object/);
             input = {
@@ -159,11 +159,11 @@ describe("general.ts", function () {
             input = {
                 arr: [3, "4", 5],
             }
-            expect(() => extract(input, schema)).to.throw(/should be an array of number\[\]/);
+            expect(() => extract(input, schema)).to.throw(`The value "4" that belongs to the key "arr" in the object "{"arr":[3,"4",5]}" is not of the expected type "number"`);
             input = {
                 arr: 7,
             }
-            expect(() => extract(input, schema)).to.throw(/should be an array of number\[\]/);
+            expect(() => extract(input, schema)).to.throw(`The value "7" that belongs to the key "arr" in the object "{"arr":7}" is not an array`);
 
         })
     })

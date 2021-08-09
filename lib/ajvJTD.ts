@@ -1,5 +1,5 @@
-import { deleteEmptyObjectsAndUndefined, FieldConstraintsCollection, flatten, Flattened } from ".";
-import { deepAssign } from "./utils";
+import { deleteEmptyAndUndefined, FieldConstraintsCollection, flatten, Flattened } from ".";
+import { deepAssign, flattenIfNeeded, visit } from "./utils";
 
 
 const fieldTypesByTypeName = {
@@ -9,8 +9,8 @@ const fieldTypesByTypeName = {
     date: "timestamp",
 }
 
-export function createAjvJTDSchema(inputFields: FieldConstraintsCollection) {
-    const flattened = flatten(inputFields);
+export function createAjvJTDSchema(inputFields: FieldConstraintsCollection | Flattened) {
+    const flattened = flattenIfNeeded(inputFields);
 
     let refCounter = 0;
     function* genRef() {
@@ -19,54 +19,41 @@ export function createAjvJTDSchema(inputFields: FieldConstraintsCollection) {
 
     const refGenerator = genRef()
 
-    const definitions = {};
+    const definitions: { [key: string]: any } = {};
+    function getTarget(variableName: string, out: {
+        [key: string]: any;
+    }, variableSettings: {
+        [key: string]: any;
+    }) {
+        const isRequired: boolean = variableSettings.required;
 
+        const outCollectionName = isRequired ? "properties" : "optionalProperties";
 
-    function recursivelyApplySettings(fields: Flattened) {
-        const out = {
-            properties: {
-
-            },
-            optionalProperties: {
-
-            }
-        };
-
-        for (let paramName in fields) {
-            const paramOptions = fields[paramName];
-
-            let target = paramOptions.required ? out.properties : out.optionalProperties;
-
-            if (paramOptions.array === true) {
-                const copyWithoutArrayProperty = Object.assign({}, paramOptions);
-                (target as any)[paramName] = {
-                    elements: {}
-                }
-                target = (target as any)[paramName] // chage the reference so that the following code will think of it as a normal item
-                paramName = "elements" // make it fill up the "elements"
-            }
-
-            // if can be resolved straight away
-            if (typeof paramOptions.type === "string") {
-                if (!(paramOptions.type in fieldTypesByTypeName)) throw new Error(`unknown type: ${paramOptions.type}`)
-                const fieldType = (fieldTypesByTypeName as any)[paramOptions.type] as string;
-
-                if (paramOptions.enum !== undefined)
-                    (target as any)[paramName] = { enum: paramOptions.enum }
-                else
-                    (target as any)[paramName] = { type: fieldType }
-            }
-
-            else if (typeof paramOptions.type === "object") {
-                const nextRef = refGenerator.next().value as string;
-                (target as any)[paramName] = { ref: nextRef };
-                (definitions as any)[nextRef] = recursivelyApplySettings(paramOptions.type);
-            }
+        out[outCollectionName] = out[outCollectionName] ?? ({} as any);
+        let target = out[outCollectionName][variableName] = {} as any
+        // if it is an array
+        if (variableSettings.array === true) {
+            target.elements = {}
+            target = target.elements
         }
-        return out
+        return target;
     }
+    const out = visit(flattened,
+        (variableName, out, type, variableSettings) => {
+            const target = getTarget(variableName, out, variableSettings);
 
-    const out = deepAssign(recursivelyApplySettings(flattened) as any, { definitions });
-
-    return deleteEmptyObjectsAndUndefined(out);
+            // if an enum
+            if (variableSettings.enum !== undefined) target.enum = variableSettings.enum
+            else target.type = type;
+        },
+        (variableName, out, childObj, variableSettings) => {
+            const target = getTarget(variableName, out, variableSettings);
+            const ref = refGenerator.next().value as string // can not be void
+            target.ref = ref
+            definitions[ref] = childObj
+        },
+        fieldTypesByTypeName
+    )
+    if (Object.keys(definitions).length !== 0) Object.assign(out, { definitions }) // only add defs if they are not empty
+    return out;
 }

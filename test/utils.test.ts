@@ -1,6 +1,6 @@
 import { expect } from "chai";
 import { describe } from "mocha"
-import { deepAssign, deleteEmptyObjectsAndUndefined, flatten } from "../lib/utils"
+import { deepAssign, deleteEmptyAndUndefined, flatten } from "../lib/utils"
 
 describe("utils.ts", function () {
     describe("#deepAssign()", function () {
@@ -176,7 +176,7 @@ describe("utils.ts", function () {
         })
     })
 
-    describe("#deleteEmptyObjects()", function () {
+    describe("#deleteEmptyAndUndefined()", function () {
         it("should not alter a legitimate object", function () {
             const obj = {
                 test: 3,
@@ -190,7 +190,7 @@ describe("utils.ts", function () {
                 }
             }
 
-            expect(deleteEmptyObjectsAndUndefined(obj)).to.deep.equal(obj);
+            expect(deleteEmptyAndUndefined(obj)).to.deep.equal(obj);
         })
 
         it("should delete empty objects and undefined, even in nested objects", function () {
@@ -217,7 +217,7 @@ describe("utils.ts", function () {
                 }
             }
 
-            expect(deleteEmptyObjectsAndUndefined(obj)).to.deep.equal(expected);
+            expect(deleteEmptyAndUndefined(obj)).to.deep.equal(expected);
         })
     })
 })

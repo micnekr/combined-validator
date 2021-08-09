@@ -1,6 +1,6 @@
 import { PreMiddlewareFunction, Schema, SchemaDefinition } from "mongoose";
 import injectValidationCreators, { callOverallValidationFunction } from "./validateUtils"
-import { fieldTypesByTypeName, flatten } from "./utils";
+import { fieldTypesByTypeName, flatten, flattenIfNeeded, visit } from "./utils";
 import { FieldConstraintsCollection, Flattened, FlattenedValue } from "./";
 
 const { stringValidate, numberValidate } = injectValidationCreators(mongoCreateValidation, mongoCreateValidateMiddleware);
@@ -16,67 +16,53 @@ export const mongoFinalValidationCallbacks = {
     greaterOrEqualTo: numberValidate.greaterOrEqualTo
 }
 
-export function constructSchema(inputFields: FieldConstraintsCollection) {
-    const flattened = flatten(inputFields);
+export function constructSchema(inputFields: FieldConstraintsCollection | Flattened) {
+    const flattened = flattenIfNeeded(inputFields);
 
-    function recursivelyApplySettings(fields: Flattened) {
-        const schemaSettings: SchemaDefinition<undefined> = {};
-        let finalValidationCallbacksForThisSchema: any[] = [];
+    let finalValidationCallbacksForThisSchema: any[] = [];
 
-        for (let paramName in fields) {
-            const paramOptions = fields[paramName];
+    const schemaDef = visit(flattened,
+        (variableName, out, type, variableSettings) => {
+            const target = out[variableName] = {} as { [key: string]: any };
 
-            // if a flattened object, do it recursively
-            if (typeof paramOptions.type !== "string") {
-                (schemaSettings as any)[paramName] = {
-                    type: recursivelyApplySettings(paramOptions.type),
-                    required: paramOptions.required,
-                }
-                continue;
-            }
+            target.required = variableSettings.required;
+            target.type = type;
 
-            const currentEntry: FlattenedValue = { type: (fieldTypesByTypeName as any)[paramOptions.type], required: paramOptions.required };
+            mongoValuesToApply.forEach(name => { if (variableSettings[name] !== undefined) target[name] = variableSettings[name] })
+            Object.entries(mongoValidateCallbacks).forEach(([cbName, cb]) => {
+                if (variableSettings[cbName] !== undefined) target.validate = cb(variableSettings[cbName]);
+            })
+            Object.entries(mongoFinalValidationCallbacks).forEach(([cbName, cb]) => {
+                if (variableSettings[cbName] === undefined) return;
+                // the first value is the validation callback, the others are the values to check (starting with self)
+                const outVals = [cb, variableName];
 
-            for (let paramOptionName in paramOptions) {
-                if (paramOptionName === "type" || paramOptionName === "required") continue
-                const paramOption = paramOptions[paramOptionName];
+                const options = variableSettings[cbName];
 
-                if (paramOptionName in mongoValidateCallbacks) {
-                    currentEntry["validate"] = (mongoValidateCallbacks as any)[paramOptionName](paramOption);
-                    continue;
-                }
+                if (Array.isArray(options)) outVals.push(...options);
+                else outVals.push(options);
 
-                if (mongoValuesToApply.includes(paramOptionName)) {
-                    currentEntry[paramOptionName] = paramOption;
-                    continue;
-                }
+                finalValidationCallbacksForThisSchema.push(outVals);
+            })
+        },
+        (variableName, out, childObj, variableSettings) => {
+            const target = out[variableName] = {} as { [key: string]: any };
 
-                if (paramOptionName in mongoFinalValidationCallbacks) {
-                    // the first value is the validation callback, the others are the values to check
-                    const outVals = [(mongoFinalValidationCallbacks as any)[paramOptionName], paramName];
+            target.required = variableSettings.required;
+            target.type = new Schema(childObj);
+        },
+        fieldTypesByTypeName
+    );
 
-                    if (Array.isArray(paramOption)) outVals.push(...paramOption);
-                    else outVals.push(paramOption);
+    const out = new Schema(schemaDef)
 
-                    finalValidationCallbacksForThisSchema.push(outVals);
+    finalValidationCallbacksForThisSchema.forEach((settings) => {
+        const validator = settings.shift();
 
-                    continue;
-                }
-            }
+        out.pre("validate", validator(settings));
+    })
 
-            (schemaSettings as any)[paramName] = currentEntry;
-        }
-
-        const out = new Schema(schemaSettings)
-        finalValidationCallbacksForThisSchema.forEach((settings) => {
-            const validator = settings.shift();
-
-            out.pre("validate", validator(settings));
-        })
-        return out;
-    }
-
-    return recursivelyApplySettings(flattened);
+    return out;
 }
 
 // "current" means that those values are no longer general

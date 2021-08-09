@@ -1,4 +1,5 @@
-import { Flattened, fieldTypesByTypeName, mongoCreateValidateMiddleware, mongoCreateValidation } from ".";
+import { Flattened, FieldConstraintsCollection } from ".";
+import { fieldTypesByTypeName, flattenIfNeeded, visit } from "./utils";
 import injectValidationCreators, { callOverallValidationFunction } from "./validateUtils";
 
 const { stringValidate, numberValidate } = injectValidationCreators(createGeneralValidation, createGeneralValidateMiddleware);
@@ -12,117 +13,114 @@ export const generalFinalValidationCallbacks = {
     greaterOrEqualTo: numberValidate.greaterOrEqualTo
 }
 
+function basicVisitWithFollowerVerification(variableName: string, type: any, variableSettings: { [key: string]: any }, follower?: any, valueArrayCb?: (value: any) => void) {
+    function constructError(value: any, variableName: string, follower: any, s: string) {
+        return `The value "${value}" that belongs to the key "${variableName}" in the object "${JSON.stringify(follower)}" ${s}`
+    }
 
-export function extract(target: any, rules: Flattened) {
-    const constructErrorMessage = (v: any, s: string) => `The data does not comply with the rules: ${v} ${s}`;
-    if (target === null || target === undefined || !Object.getPrototypeOf(target).isPrototypeOf(Object)) throw new Error(constructErrorMessage(target, "should be an object"))
+    if (follower === undefined) throw new Error("Please supply an object to be validated")
 
-    const out: any = {}
+    const value = follower[variableName];
 
-    for (let requiredKey in rules) {
-        const entry = target[requiredKey];
-        const entryRequirementsInfo = rules[requiredKey];
-        if (entry === undefined) {
-            if (entryRequirementsInfo.required) throw new Error(constructErrorMessage(entry, "is required and should be present"));
-            else continue;
-        }
-
-
-        if (typeof entryRequirementsInfo.type === "string") {
-            // check if the data is correct
-            const dataType = (fieldTypesByTypeName as any)[entryRequirementsInfo.type];
-            const isArray = entryRequirementsInfo.array === true;
-
-            const isCorrectType = (v: any) => v instanceof dataType || typeof v === entryRequirementsInfo.type
-
-            if (dataType === undefined) throw new Error(constructErrorMessage(entry, ` can not be processed because the type ${dataType} is not defined`));
-            if (!isArray) {
-                // checking that the type is correct
-                if (isCorrectType(entry)) out[requiredKey] = entry;
-                else throw new Error(constructErrorMessage(entry, `should be a ${entryRequirementsInfo.type}`));
-            } else {
-                if (!Array.isArray(entry)) throw new Error(constructErrorMessage(entry, `should be an array of ${entryRequirementsInfo.type}[]`));
-                if (!entry.every((v) => isCorrectType(v))) throw new Error(constructErrorMessage(entry, `should be an array of ${entryRequirementsInfo.type}[]`));
-                out[requiredKey] = entry
-            }
-        } else {
-            const isArray = entryRequirementsInfo.array === true;
-            const type = entryRequirementsInfo.type
-
-            // if it is a nested array, recurse
-            if (isArray) out[requiredKey] = entry.map(((v: any) => extract(v, type)))
-            else out[requiredKey] = extract(entry, type);
+    const isCorrectType = (v: any) => {
+        try {
+            return typeof v === variableSettings.type || v instanceof (type as any)
+        } catch {
+            return false
         }
     }
 
-    return out;
+
+    let valueArray;
+    if (variableSettings.array === true) {
+        if (!Array.isArray(value)) throw new Error(constructError(value, variableName, follower, `is not an array`));
+        valueArray = value;
+    } else valueArray = [value];
+
+    valueArray.forEach(value => {
+        // do more processing to check if it works
+        if (!isCorrectType(value)) throw new Error(constructError(value, variableName, follower, `is not of the expected type "${variableSettings.type}"`))
+        valueArrayCb?.(value)
+    })
+    return value;
 }
 
-export function extractAndValidate(target: any, rules: Flattened) {
-    const extractedTarget = extract(target, rules) // make sure that all the needed keys are there
+export function extract(follower: any, rules: FieldConstraintsCollection | Flattened) {
+    const flattened = flattenIfNeeded(rules);
+
+    return visit(flattened,
+        (variableName, toModify, type, variableSettings, follower) => {
+            const value = basicVisitWithFollowerVerification(variableName, type, variableSettings, follower)
+
+            toModify[variableName] = value;
+        },
+        (variableName, toModify, childObj) => {
+            toModify[variableName] = childObj
+        },
+        fieldTypesByTypeName,
+        follower
+    );
+}
+
+export function extractAndValidate(follower: any, rules: FieldConstraintsCollection | Flattened) {
+    const flattened = flattenIfNeeded(rules) // make sure that all the needed keys are there
 
     const finalValidationCalls: any[][] = [];
-
-    function recursivelyApplySettings(currentTarget: any, currentRules: Flattened) {
-        for (let currentElementName in currentTarget) {
-            let currentElementArray = currentTarget[currentElementName];
-            const currentRule = currentRules[currentElementName];
-
-            if (currentRule.array !== true) currentElementArray = [currentElementArray]
-
-            for (let currentElement of currentElementArray) { // TODO: this loop is not needed for final validation callbacks
-
-                // if a flattened object, do it recursively
-                if (typeof currentRule.type !== "string") {
-                    recursivelyApplySettings(currentElement, currentRule.type);
-                    continue;
+    const out = visit(flattened,
+        (variableName, toModify, type, variableSettings, follower) => {
+            const value = basicVisitWithFollowerVerification(variableName, type, variableSettings, follower, v => {
+                if (variableSettings.enum !== undefined) {
+                    if (!variableSettings.enum.includes(v)) throw new Error(`The enum "${variableName}" with the value "${follower[variableName]}" must have one of the following values: "${variableSettings.enum}"`)
                 }
 
-                for (let optionName in currentRule) {
-                    if (optionName === "type" || optionName === "required") continue // skip if it is not a rule
-                    const option = currentRule[optionName];
-
-                    if (optionName === "enum") {
-                        if (!option.includes(currentElement)) throw new Error(`The enum "${currentElementName}" with the value "${currentElement}" must have one of the following values: "${option}"`)
-                    }
-
-                    if (optionName in generalValidateCallbacks) {
+                Object.entries(generalValidateCallbacks).forEach(([cbName, cb]) => {
+                    if (variableSettings[cbName] !== undefined) {
                         try {
-                            (generalValidateCallbacks as any)[optionName](currentElement, option);
+                            cb(v, variableSettings[cbName]);
+
+
                         } catch (e) {
-                            throw new Error(`The "${optionName}" constraint with the value "${option}" was not met by the field "${currentElementName}" with the value "${currentElement}" with an error message saying "${e.message}"`)
+                            throw new Error(`The "${cbName}" constraint with the value "${variableSettings[cbName]}" was not met by the field "${variableName}" with the value "${v}" with an error message saying "${e.message}"`)
                         }
+
                     }
+                })
 
-                    if (optionName in generalFinalValidationCallbacks) {
+                Object.entries(generalFinalValidationCallbacks).forEach(([cbName, cb]) => {
+                    if (variableSettings[cbName] !== undefined) {
+                        const options = variableSettings[cbName];
                         // the first value is the validation callback, the others are the values to check
-                        const outVals = [(generalFinalValidationCallbacks as any)[optionName], currentElementName];
-
-                        if (Array.isArray(option)) outVals.push(...option); // TODO: test this
-                        else outVals.push(option);
-
+                        const outVals = [cb, variableName];
+                        if (Array.isArray(options)) outVals.push(...options); // TODO: test this
+                        else outVals.push(options);
                         finalValidationCalls.push(outVals);
 
-                        continue;
                     }
-                }
-            }
-        }
-    }
+                })
+            })
 
-    recursivelyApplySettings(extractedTarget, rules);
+            toModify[variableName] = value;
+        },
+        (variableName, toModify, childObj) => {
+            toModify[variableName] = childObj
+        },
+        fieldTypesByTypeName,
+        follower
+    );
 
+    
     for (let callName in finalValidationCalls) {
         const callOptions = finalValidationCalls[callName];
         const validator = callOptions.shift();
 
         try {
-            validator(callOptions, extractedTarget);
+            validator(callOptions, follower);
         } catch (e) {
             throw new Error(`A constraint failed with an error message saying "${e.message}"`);
         }
     }
-    return extractedTarget;
+
+    return out
 }
 
 function createGeneralValidation<T>(message: string, validate: (toCheck: T, ...referenceVals: any[]) => boolean) {

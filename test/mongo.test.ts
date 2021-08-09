@@ -13,7 +13,10 @@ describe("mongo.ts", function () {
         this.beforeEach(function () {
             // stub the dependency
             // @ts-ignore
-            schemaSpy = stub(mongoose, "Schema").callsFake((args) => args);
+            schemaSpy = stub(mongoose, "Schema").callsFake(args => {return {
+                schema: "Has to be a schema",
+                ...args
+            }});
             const stringMaxLengthStub = stub(mongoValidateCallbacks, "maxLength").callsFake((args) => `maxLen${args}` as any);
             const stringExactLengthStub = stub(mongoValidateCallbacks, "exactLength").callsFake((args) => `exactLength${args}` as any);
             const numberGreaterOrEqualToStub = stub(mongoFinalValidationCallbacks, "greaterOrEqualTo").callsFake((args) => `greaterOrEqualTo${args}` as any);
@@ -77,7 +80,7 @@ describe("mongo.ts", function () {
                     })
                 },
             }
-            expect(constructSchema(o)).to.deep.equal(expected)
+            expect(constructSchema(o)).to.deep.equal(new mongoose.Schema(expected))
         })
 
         it("should correctly process enums", function () {
@@ -142,6 +145,8 @@ describe("mongo.ts", function () {
                     default: "hey"
                 },
             }
+
+            console.log(constructSchema(o))
 
             expect(constructSchema(o)).to.deep.equal(new mongoose.Schema(expected))
         })
@@ -233,7 +238,7 @@ describe("mongo.ts", function () {
             }
 
             expect(constructSchema(o)).to.deep.equal(expected);
-            expect(pre.callCount, "the pre hook should be called once").to.equal(2);
+            expect(pre.callCount, "the pre hook should be called twice").to.equal(2);
             expect(pre.args).to.deep.include(["validate", mongoFinalValidationCallbacks.greaterOrEqualTo(["num1", "num2"])]);
             expect(pre.args).to.deep.include(["validate", mongoFinalValidationCallbacks.greaterOrEqualTo(["num3", "num4", "num5"])]);
         })
