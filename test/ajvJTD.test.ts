@@ -187,14 +187,14 @@ describe("ajvJTD.ts", function () {
                 })
 
                 const parser = ajv.compileParser(out1)
-                
+
                 let expectedToBeParsed = {
                     foo: "3"
                 }
-                
+
                 expect(parser(JSON.stringify(expectedToBeParsed))).to.deep.equal(expectedToBeParsed)
             })
-            
+
             it("should correctly process arrays", function () {
                 const out1 = createAjvJTDSchema({
                     optional: {
@@ -238,7 +238,7 @@ describe("ajvJTD.ts", function () {
                         }
                     },
                 })
-                
+
                 const expectedOut1 = {
                     foo: ["bar", "test", "r"]
                 }
@@ -249,20 +249,37 @@ describe("ajvJTD.ts", function () {
                         { email: "r" }
                     ]
                 }
-                
+
                 const expectedOut3 = {
                     foo: [
                         { email: [{ more: "bar" }, { more: "test" }] },
                         { email: [{ more: "r" }] }
                     ]
                 }
-                
+
                 let parser = ajv.compileParser(out1)
                 expect(parser(JSON.stringify(expectedOut1))).to.deep.equal(expectedOut1)
                 parser = ajv.compileParser(out2)
                 expect(parser(JSON.stringify(expectedOut2))).to.deep.equal(expectedOut2)
                 parser = ajv.compileParser(out3)
                 expect(parser(JSON.stringify(expectedOut3))).to.deep.equal(expectedOut3)
+            })
+
+            it("should correctly work with arrays and enums at the same time", function () {
+                const out = createAjvJTDSchema({
+                    required: {
+                        string: {
+                            foo: {enum: ["bar1", "bar2"], array: true}
+                        }
+                    }
+                })
+
+                const expectedOut = {
+                    foo: ["bar1", "bar2"]
+                }
+
+                let parser = ajv.compileParser(out)
+                expect(parser(JSON.stringify(expectedOut))).to.deep.equal(expectedOut)
             })
         })
     })
