@@ -26,7 +26,7 @@ export function constructSchema(inputFields: FieldConstraintsCollection | Flatte
             const target = out[variableName] = {} as { [key: string]: any };
 
             target.required = variableSettings.required;
-            target.type = type;
+            target.type = variableSettings.array === true ? [type] : type;
 
             mongoValuesToApply.forEach(name => { if (variableSettings[name] !== undefined) target[name] = variableSettings[name] })
             Object.entries(mongoValidateCallbacks).forEach(([cbName, cb]) => {
@@ -49,7 +49,7 @@ export function constructSchema(inputFields: FieldConstraintsCollection | Flatte
             const target = out[variableName] = {} as { [key: string]: any };
 
             target.required = variableSettings.required;
-            target.type = new Schema(childObj);
+            target.type = variableSettings.array === true ? [new Schema(childObj)] : new Schema(childObj);
         },
         fieldTypesByTypeName
     );

@@ -13,10 +13,12 @@ describe("mongo.ts", function () {
         this.beforeEach(function () {
             // stub the dependency
             // @ts-ignore
-            schemaSpy = stub(mongoose, "Schema").callsFake(args => {return {
-                schema: "Has to be a schema",
-                ...args
-            }});
+            schemaSpy = stub(mongoose, "Schema").callsFake(args => {
+                return {
+                    schema: "Has to be a schema",
+                    ...args
+                }
+            });
             const stringMaxLengthStub = stub(mongoValidateCallbacks, "maxLength").callsFake((args) => `maxLen${args}` as any);
             const stringExactLengthStub = stub(mongoValidateCallbacks, "exactLength").callsFake((args) => `exactLength${args}` as any);
             const numberGreaterOrEqualToStub = stub(mongoFinalValidationCallbacks, "greaterOrEqualTo").callsFake((args) => `greaterOrEqualTo${args}` as any);
@@ -146,8 +148,6 @@ describe("mongo.ts", function () {
                 },
             }
 
-            console.log(constructSchema(o))
-
             expect(constructSchema(o)).to.deep.equal(new mongoose.Schema(expected))
         })
 
@@ -178,6 +178,78 @@ describe("mongo.ts", function () {
             }
 
             expect(constructSchema(o)).to.deep.equal(new mongoose.Schema(expected))
+        })
+
+        it("should correctly handle arrays", function () {
+            const o1: FieldConstraintsCollection = {
+                required: {
+                    string: {
+                        name1: { array: true }
+                    }
+                },
+            }
+            const o2: FieldConstraintsCollection = {
+                required: {
+                    object: {
+                        name1: {
+                            required: {
+                                string: {
+                                    foo: {}
+                                }
+                            },
+                            array: true
+                        }
+                    }
+                },
+            }
+            const o3: FieldConstraintsCollection = {
+                required: {
+                    object: {
+                        name1: {
+                            required: {
+                                string: {
+                                    foo: {enum: ["bar1", "bar2"]}
+                                }
+                            },
+                            array: true
+                        }
+                    }
+                },
+            }
+
+            const expected1: SchemaDefinition<any> = {
+                name1: {
+                    type: [String],
+                    required: true,
+                },
+            }
+            const expected2: SchemaDefinition<any> = {
+                name1: {
+                    type: [new mongoose.Schema({
+                        foo: {
+                            type: String,
+                            required: true
+                        }
+                    })],
+                    required: true,
+                },
+            }
+            const expected3: SchemaDefinition<any> = {
+                name1: {
+                    type: [new mongoose.Schema({
+                        foo: {
+                            type: String,
+                            required: true,
+                            enum: ["bar1", "bar2"]
+                        }
+                    })],
+                    required: true,
+                },
+            }
+
+            expect(constructSchema(o1)).to.deep.equal(new mongoose.Schema(expected1))
+            expect(constructSchema(o2)).to.deep.equal(new mongoose.Schema(expected2))
+            expect(constructSchema(o3)).to.deep.equal(new mongoose.Schema(expected3))
         })
 
         it("Should set correct validation functions", function () {
