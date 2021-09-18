@@ -127,11 +127,11 @@ export function deleteEmptyAndUndefined<T>(target: T): any {
     if (Object.keys(target).length === 0) return undefined;
 
     const out: any = {}
-    for (let objKey in target) {
+    Object.entries(target).forEach(([objKey, objEntry]) => {
         // if an empty object, do not add
-        const newVal = deleteEmptyAndUndefined(target[objKey]);
+        const newVal = deleteEmptyAndUndefined(objEntry);
         if (newVal !== undefined) out[objKey] = newVal;
-    }
+    })
 
     return out;
 }

@@ -6,7 +6,7 @@ clear
 
 npm run test
 
-tsc
+./node_modules/typescript/bin/tsc
 
 # cp ./dist/index.js ./
 # cp ./lib/index.ts ./

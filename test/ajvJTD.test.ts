@@ -274,8 +274,6 @@ describe("ajvJTD.ts", function () {
                     }
                 })
 
-                console.log(JSON.stringify(out))
-
                 const expectedOut = {
                     foo: ["bar1", "bar2"]
                 }
