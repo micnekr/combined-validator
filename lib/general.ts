@@ -100,10 +100,10 @@ export function extract(
   );
 }
 
-export function conditionalKeep(
+export function filterValues(
   follower: any,
   rules: FieldConstraintsCollection | Flattened,
-  key: string,
+  keys: string[],
   predicate: (v: any) => boolean
 ) {
   const flattened = flattenIfNeeded(rules);
@@ -118,18 +118,47 @@ export function conditionalKeep(
         follower
       );
 
-      if (key in variableSettings && !predicate(variableSettings[key])) return;
+      if (!predicate(keys.map((k) => variableSettings[k]))) return;
 
       toModify[variableName] = value;
     },
     (variableName, toModify, childObj, variableSettings) => {
-      if (key in variableSettings && !predicate(variableSettings[key])) return;
+      if (!predicate(keys.map((k) => variableSettings[k]))) return;
 
       toModify[variableName] = childObj;
     },
     fieldTypesByTypeName,
     follower
   );
+}
+
+export function filterRules(
+  rules: FieldConstraintsCollection | Flattened,
+  keys: string[],
+  predicate: (v: any[]) => boolean
+): Flattened {
+  const flattened = flattenIfNeeded(rules);
+
+  const out: Flattened = {};
+
+  Object.entries(flattened).forEach(([flattenedValueName, flattenedValue]) => {
+    const type = flattenedValue.type;
+    // if the key is not present or can not be extracted
+
+    if (typeof type === "string") {
+      // if it is a primitive, check
+      if (!predicate(keys.map((k) => flattenedValue[k]))) return;
+      out[flattenedValueName] = flattenedValue;
+    } else if (typeof type === "object") {
+      if (!predicate(keys.map((k) => flattenedValue[k]))) return;
+		out[flattenedValueName] = {
+			type: filterRules(type, keys, predicate),
+			required: flattenedValue.required
+		}
+    }
+  });
+
+  return out;
 }
 
 export function extractAndValidate(

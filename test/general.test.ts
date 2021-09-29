@@ -1,6 +1,11 @@
 import { expect } from "chai";
 import { flatten } from "../lib";
-import { conditionalKeep, extract, extractAndValidate } from "../lib/general";
+import {
+  filterValues,
+  extract,
+  extractAndValidate,
+  filterRules,
+} from "../lib/general";
 
 describe("general.ts", function () {
   describe("#extract()", function () {
@@ -463,7 +468,7 @@ describe("general.ts", function () {
     });
   });
 
-  describe("#conditionalKeep()", function () {
+  describe("#filterValues()", function () {
     it("should skip data that does not satisfy the predicate", function () {
       const input = {
         str: "test string",
@@ -475,10 +480,10 @@ describe("general.ts", function () {
         },
       };
 
-	  const expectedOut = {
-      num: 3,
-      bool: true,
-    };
+      const expectedOut = {
+        num: 3,
+        bool: true,
+      };
 
       const schema = flatten({
         required: {
@@ -508,7 +513,69 @@ describe("general.ts", function () {
       });
 
       expect(
-        conditionalKeep(input, schema, "hide", (v) => v !== true)
+        filterValues(input, schema, ["hide"], (v: any[]) =>
+          v.every((item) => item !== true)
+        )
+      ).to.deep.equal(expectedOut);
+    });
+  });
+
+  describe("#filterRules()", function () {
+    it("should skip rules that do not satisfy the predicate", function () {
+      const schema = flatten({
+        required: {
+          string: {
+            str: { hide: true },
+          },
+          number: {
+            num: {},
+          },
+          boolean: {
+            bool: {},
+          },
+          date: {
+            dat: { hide: true },
+          },
+          object: {
+            obj1: {
+              required: {
+                string: {
+                  foo: {},
+                },
+              },
+              hide: true,
+            },
+            obj2: {
+              required: {
+                string: {
+                  foo: {},
+                },
+              },
+            },
+          },
+        },
+      });
+
+      const expectedOut = flatten({
+        required: {
+          number: { num: {} },
+          boolean: { bool: {} },
+          object: {
+            obj2: {
+              required: {
+                string: {
+                  foo: {},
+                },
+              },
+            },
+          },
+        },
+      });
+
+      expect(
+        filterRules(schema, ["hide"], (v: any[]) =>
+          v.every((item) => item !== true)
+        )
       ).to.deep.equal(expectedOut);
     });
   });
